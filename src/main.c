@@ -3,8 +3,8 @@
 #include "resources.h"
 #include "splash.h"
 
-enum AppState { ST_SPLASH, TITLE, GAME };
-enum AppState appState = ST_SPLASH;
+typedef enum { SPLASH, TITLE, GAME, GAME_OVER } AppState;
+AppState appState = SPLASH;
 
 void game() {
     VDP_drawText("Do game stuff.", 12, 20);
@@ -23,11 +23,13 @@ int main(bool hardReset) {
     PAL_setColors(0, (u16*) palette_black, 64, DMA);
 
     while (true) {
-        if (appState == ST_SPLASH) {
+        if (appState == SPLASH) {
             splash();
             appState = GAME;
         } else if (appState == GAME) {
             game();
+        } else {
+            // nothing yet
         }
     }
     return (0);
