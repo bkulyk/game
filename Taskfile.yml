@@ -1,0 +1,40 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Game!
+
+tasks:
+  default:
+    cmds:
+      - cowsay "{{.GREETING}}"
+      - task build
+    silent: true
+
+  build:
+    cmds:
+      - source /opt/toolchains/mars/mars.sh
+      - make
+    silent: true
+
+  clean:
+    cmds:
+      - make clean
+    silent: true
+    aliases:
+      - clear
+
+  run:
+    cmds:
+      # runs with "genesis plus"
+      - cowsay "Running {{.GREETING}}..."
+      - open -a "Genesis Plus" out/rom.bin
+    silent: true
+
+  dev:
+    cmds:
+      - task clean
+      - task build
+      - task run
+    silent: true

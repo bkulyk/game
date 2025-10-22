@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    ".fantomasignore": "ignore",
+    "genesis.h": "c",
+    "resources.h": "c"
+  },
+  "cSpell.words": [
+    "sgdk"
+  ]
+}
