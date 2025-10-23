@@ -15,13 +15,16 @@ int main(bool hardReset) {
   app_init();
 
   while (true) {
-    if (appState == SPLASH) {
-      splash();
-      appState = GAME;
-    } else if (appState == GAME) {
-      game_run();
-    } else {
-      // nothing yet
+    switch (appState) {
+      case SPLASH:
+        splash();
+        appState = GAME;
+        break;
+      case GAME:
+        game_run();
+        break;
+      default:
+        break;
     }
   }
 

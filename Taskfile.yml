@@ -19,6 +19,7 @@ tasks:
     cmds:
       - cowsay "Processing assets..."
       - python3 res/color-snapper.py res/src/player.png res/player.png
+      - python3 res/color-snapper.py res/src/projectile.png res/projectile.png
     silent: true
 
   build:
