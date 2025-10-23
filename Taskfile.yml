@@ -4,6 +4,9 @@ version: '3'
 
 vars:
   GREETING: Game!
+  GEN_PLUS: open -a "genesis plus"
+  BLASTEM: /opt/toolchains/blastem/blastem
+  EMU: "{{ .BLASTEM }}"
 
 tasks:
   default:
@@ -29,7 +32,8 @@ tasks:
     cmds:
       # runs with "genesis plus"
       - cowsay "Running {{.GREETING}}..."
-      - open -a "Genesis Plus" out/rom.bin
+      # - open -a "Genesis Plus" out/rom.bin
+      - "{{ .EMU }} out/rom.bin"
     silent: true
 
   dev:
