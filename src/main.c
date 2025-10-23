@@ -19,7 +19,7 @@ int main(bool hardReset) {
       splash();
       appState = GAME;
     } else if (appState == GAME) {
-      run_game();
+      game_run();
     } else {
       // nothing yet
     }
