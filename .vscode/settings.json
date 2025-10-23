@@ -2,11 +2,19 @@
   "files.associations": {
     ".fantomasignore": "ignore",
     "genesis.h": "c",
-    "resources.h": "c"
+    "resources.h": "c",
+    "array": "c",
+    "string": "c",
+    "string_view": "c",
+    "vector": "c",
+    "locale": "c",
+    "splash.h": "c",
+    "game.h": "c"
   },
   "cSpell.words": [
     "blastem",
     "cowsay",
+    "respawn",
     "sgdk"
   ]
 }

@@ -15,6 +15,12 @@ tasks:
       - task build
     silent: true
 
+  assets:
+    cmds:
+      - cowsay "Processing assets..."
+      - python3 res/color-snapper.py res/src/player.png res/player.png
+    silent: true
+
   build:
     cmds:
       - source /opt/toolchains/mars/mars.sh
