@@ -1,5 +1,4 @@
 #include <genesis.h>
-
 #include "resources.h"
 
 // show the given image at the given position
@@ -15,7 +14,7 @@ void splash() {
   // show the SGDK logo, you know, like a SEGA splash screen
   showAnImage(logo_sgdk, 30, 12);
   // so some text
-  VDP_drawText("Hello, World!!!!", 12, 20);
+  VDP_drawText("Build with SGDK", 12, 20);
 
   // hold for a few seconds
   while (frames < 180) {

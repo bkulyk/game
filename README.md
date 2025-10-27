@@ -9,10 +9,6 @@ This is going to be a game. Likely developed in C with SGDK/Mars. I'm still figu
 task dev
 ```
 
-## Rambling/Planning
-
-- Robo Aleste main sprite was 32x45 (without the 2 options)
-
 ## Emulators
 
 I found 2 emulators to work for Mac [genesis plus] and [blastem].

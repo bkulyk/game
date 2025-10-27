@@ -22,3 +22,12 @@ void gameObject_init(GameObject *object, s16 x, s16 y) {
   object->x = FIX16(x);
   object->y = FIX16(y);
 }
+
+bool gameObject_collides(GameObject *obj1, GameObject *obj2) {
+  return !(
+    fix16ToInt(obj1->x) + obj1->w <= fix16ToInt(obj2->x) ||
+    fix16ToInt(obj1->x) >= fix16ToInt(obj2->x) + obj2->w ||
+    fix16ToInt(obj1->y) + obj1->h <= fix16ToInt(obj2->y) ||
+    fix16ToInt(obj1->y) >= fix16ToInt(obj2->y) + obj2->h
+  );
+}
