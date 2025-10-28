@@ -9,6 +9,34 @@ This is going to be a game. Likely developed in C with SGDK/Mars. I'm still figu
 task dev
 ```
 
+### Dependencies
+
+To build on a mac and avoid docker I'm using [marsdev](https://github.com/andwn/marsdev/), I found it tricky to setup.
+
+I had to make some tweaks to use clang from homebrew instead of whatever comes with the Mac
+
+```sh
+export CC=/opt/homebrew/opt/llvm@16/bin/clang && export CXX=/opt/homebrew/opt/llvm@16/bin/clang++ && make all
+```
+
+but that didn't work for everything so in md-tools-flamewing, I had to make a manual change to point to `/opt/homebrew/opt/llvm@16/bin/clang++`
+
+and mdtools-sik I had to
+
+```makefile
+CFLAGS := $(CFLAGS) -I/opt/homebrew/opt/libpng/include
+LDFLAGS := $(LDFLAGS) -L/opt/homebrew/opt/libpng/lib
+```
+
+The version of SGDK was dates and the example were not working without remapping some functions, so I changed the SGDK_VER.
+
+```makefile
+# SGDK_VER ?= __UNSET__
+SGDK_VER ?= v2.11
+```
+
+I'm sure there are more elegant ways to make these changes over editing files, but I was having trouble and in a rush.
+
 ## Emulators
 
 I found 2 emulators to work for Mac [genesis plus] and [blastem].

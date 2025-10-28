@@ -10,7 +10,9 @@ typedef enum { POPCORN_1 } EnemyType;
 #define PLAYER_SPAWN_POS_X              320/2-20        // Player spawn x position
 #define PLAYER_SPAWN_POS_Y              (224/5)*4 - 20  // Player spawn y position
 #define PLAYER_SPEED                    FIX16(3)        // Player movement speedPLAYER_SPEED
-#define PROJECTILE_COOLDOWN_TIMER       6               // Frames between shots
+#define BG_V_SPEED                      -4              // Background scroll speed
+#define BG_H_SPEED                      0               // Background scroll speed
+#define PROJECTILE_COOLDOWN_TIMER       8               // Frames between shots
 #define PROJECTILE_POOL_SIZE            10
 #define PROJECTILE_WIDTH                16              // Projectile object width
 #define PROJECTILE_HEIGHT               8               // Projectile object height
@@ -46,6 +48,8 @@ typedef struct {
   Pool *projectile_pool;
   Pool *enemy_pool;
   Pool *explosion_pool;
+  u16 bg_x;
+  u16 bg_y;
 } GameState;
 
 GameState game;
@@ -91,8 +95,8 @@ void player_try_shoot(Player *player) {
 
   player->coolDownTimer = PROJECTILE_COOLDOWN_TIMER;
   projectile_spawn(
-    fix16ToInt(player->x) + (player->w / 2) - (PROJECTILE_WIDTH / 2),
-    fix16ToInt(player->y) - PROJECTILE_HEIGHT
+    F16_toInt(player->x) + (player->w / 2) - (PROJECTILE_WIDTH / 2),
+    F16_toInt(player->y) - PROJECTILE_HEIGHT
   );
 }
 
@@ -130,7 +134,7 @@ void player_update_position() {
   game.player.x = clamp(game.player.x, FIX16(0), FIX16(VDP_getScreenWidth() - game.player.w));
   game.player.y = clamp(game.player.y, FIX16(0), FIX16(VDP_getScreenHeight() - game.player.h));
 
-  SPR_setPosition(game.player.sprite, fix16ToInt(game.player.x), fix16ToInt(game.player.y));
+  SPR_setPosition(game.player.sprite, F16_toInt(game.player.x), F16_toInt(game.player.y));
 }
 
 void player_update() {
@@ -159,7 +163,7 @@ void enemies_update() {
         break;
     }
 
-    SPR_setPosition(enemy->sprite, fix16ToInt(enemy->x), fix16ToInt(enemy->y));
+    SPR_setPosition(enemy->sprite, F16_toInt(enemy->x), F16_toInt(enemy->y));
 
     // Remove enemy if it goes off-screen
     if (enemy->y > FIX16(VDP_getScreenHeight())) {
@@ -181,18 +185,18 @@ void projectile_collision_update() {
       }
 
       if (gameObject_collides((GameObject *) projectile, (GameObject *) enemy)) {
-        // Collision detected
+        // collision detected
         if (projectile->damage_points >= enemy->hit_points) {
           enemy->hit_points -= projectile->damage_points;
         } else {
           enemy->hit_points = 0;
         }
 
-        // Hide projectile
+        // hide projectile
         release_pooled_object(game.projectile_pool, (void *) projectile);
 
-        // Check if enemy is dead
-        if (enemy->hit_points <= 0) {
+        // check if enemy is dead
+        if (enemy->hit_points == 0) {
           release_pooled_object(game.enemy_pool, (void *) enemy);
         }
 
@@ -226,7 +230,7 @@ void projectiles_update() {
     }
 
     projectile->y -= PROJECTILE_SPEED;
-    SPR_setPosition(projectile->sprite, fix16ToInt(projectile->x), fix16ToInt(projectile->y));
+    SPR_setPosition(projectile->sprite, F16_toInt(projectile->x), F16_toInt(projectile->y));
 
     // Remove it's off-screen
     if (projectile->y < FIX16(0)) {
@@ -235,8 +239,23 @@ void projectiles_update() {
   }
 }
 
-void game_draw_hud() {
+void game_draw_hud(GameState *game) {
   VDP_drawTextBG(BG_B, "press a to shoot", 15, 0);
+}
+
+void bg_init() {
+  PAL_setPalette(PAL3, bg_img.palette->data, DMA);
+  VDP_drawImageEx(BG_A, &bg_img, TILE_ATTR_FULL(PAL3, false, false, false, TILE_USER_INDEX), 0, 0, false, DMA);
+  VDP_setScrollingMode(HSCROLL_PLANE, VSCROLL_PLANE);
+  VDP_setVerticalScroll(BG_A, 0);
+  VDP_setHorizontalScroll(BG_A, 0);
+}
+
+void bg_update(GameState *game) {
+  game->bg_y += BG_V_SPEED;
+  game->bg_x += BG_H_SPEED;
+  VDP_setVerticalScroll(BG_A, game->bg_y);
+  VDP_setHorizontalScroll(BG_A, game->bg_x);
 }
 
 void game_run() {
@@ -246,6 +265,7 @@ void game_run() {
   PAL_setPalette(PAL1, player_sprite.palette->data, DMA);
   PAL_setPalette(PAL2, popcorn_sprite.palette->data, DMA);
 
+  bg_init();
   game_pools_create();
   player_create();
 
@@ -259,7 +279,8 @@ void game_run() {
     player_update();
     enemies_update();
     projectile_collision_update();
-    game_draw_hud();
+    game_draw_hud(&game);
+    bg_update(&game);
     SPR_update();
     SYS_doVBlankProcess();
   }

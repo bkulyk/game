@@ -25,9 +25,9 @@ void gameObject_init(GameObject *object, s16 x, s16 y) {
 
 bool gameObject_collides(GameObject *obj1, GameObject *obj2) {
   return !(
-    fix16ToInt(obj1->x) + obj1->w <= fix16ToInt(obj2->x) ||
-    fix16ToInt(obj1->x) >= fix16ToInt(obj2->x) + obj2->w ||
-    fix16ToInt(obj1->y) + obj1->h <= fix16ToInt(obj2->y) ||
-    fix16ToInt(obj1->y) >= fix16ToInt(obj2->y) + obj2->h
+    F16_toInt(obj1->x) + obj1->w <= F16_toInt(obj2->x) ||
+    F16_toInt(obj1->x) >= F16_toInt(obj2->x) + obj2->w ||
+    F16_toInt(obj1->y) + obj1->h <= F16_toInt(obj2->y) ||
+    F16_toInt(obj1->y) >= F16_toInt(obj2->y) + obj2->h
   );
 }
