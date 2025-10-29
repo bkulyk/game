@@ -1,25 +1,26 @@
 #include <genesis.h>
 #include "game_object.h"
 #include "resources.h"
+#include "enemy.h"
 
 typedef enum { PL_STATE_DIED, PL_STATE_NORMAL } PlayerState;
-typedef enum { POPCORN_1 } EnemyType;
 
-#define PLAYER_HEIGHT                   40              // Player object height
-#define PLAYER_WIDTH                    40              // Player object width
+#define PLAYER_HEIGHT                   32              // Player object height
+#define PLAYER_WIDTH                    32              // Player object width
 #define PLAYER_SPAWN_POS_X              320/2-20        // Player spawn x position
 #define PLAYER_SPAWN_POS_Y              (224/5)*4 - 20  // Player spawn y position
 #define PLAYER_SPEED                    FIX16(3)        // Player movement speedPLAYER_SPEED
 #define BG_V_SPEED                      -4              // Background scroll speed
 #define BG_H_SPEED                      0               // Background scroll speed
 #define PROJECTILE_COOLDOWN_TIMER       8               // Frames between shots
-#define PROJECTILE_POOL_SIZE            10
+#define PROJECTILE_POOL_SIZE            8
 #define PROJECTILE_WIDTH                16              // Projectile object width
 #define PROJECTILE_HEIGHT               8               // Projectile object height
 #define PROJECTILE_SPEED                FIX16(10)       // Projectile movement speed
-#define POPCORN_HEIGHT                  24
-#define POPCORN_WIDTH                   24
-#define POPCORN_1_HP                    8
+#define POPCORN_POOL_SIZE               37
+#define ENEMY_PROJECTILE_POOL_SIZE      24
+#define ENEMY_PROJECTILE_WIDTH          8
+#define ENEMY_PROJECTILE_HEIGHT         8
 
 // Helper macro for iterating through all objects in a specific pool (used for initialisation object)
 #define FOREACH_IN_POOL(ObjectType, object, pool) \
@@ -28,26 +29,22 @@ typedef enum { POPCORN_1 } EnemyType;
     object = *++ptr)
 
 typedef struct {
-  GameObject;         // Inherits base GameObject properties
-  PlayerState state;  // Current player state
-  u16 coolDownTimer;  // Shooting cooldown counter
-  u16 respawnTimer;   // Timer for re-spawning after death
-  u16 joyPad;
+  GameObject;           // Inherits base GameObject properties
+  PlayerState state;    // Current player state
+  u16 cool_down_timer;  // Shooting cooldown counter
+  u16 respawn_timer;    // Timer for re-spawning after death
+  u16 joy_pad;
 } Player;
-
-typedef struct {
-  GameObject;
-  u16 hit_points;
-  EnemyType enemy_type;
-} Enemy;
 
 typedef struct { GameObject; u8 damage_points; } Projectile;
 
 typedef struct {
-  Player player;
+  Player *player;
+  Pool *player_pool;
   Pool *projectile_pool;
   Pool *enemy_pool;
   Pool *explosion_pool;
+  Pool *enemy_projectile_pool;
   u16 bg_x;
   u16 bg_y;
 } GameState;
@@ -55,15 +52,13 @@ typedef struct {
 GameState game;
 
 void player_spawn() {
-  gameObject_init((GameObject *) &game.player, PLAYER_SPAWN_POS_X, PLAYER_SPAWN_POS_Y);
-  game.player.state = PL_STATE_NORMAL;
-}
-
-void player_create() {
-  gameObject_create((GameObject *) &game.player, &player_sprite, PAL1, PLAYER_SPAWN_POS_X, PLAYER_SPAWN_POS_Y, PLAYER_WIDTH, PLAYER_HEIGHT);
-  game.player.joyPad = JOY_1;
-  game.player.coolDownTimer = 0;
-  player_spawn();
+  game.player = (Player *) POOL_allocate(game.player_pool);
+  if (game.player) {
+    gameObject_init((GameObject *) game.player, PLAYER_SPAWN_POS_X, PLAYER_SPAWN_POS_Y);
+    game.player->state = PL_STATE_NORMAL;
+    game.player->joy_pad = JOY_1;
+    game.player->cool_down_timer = 0;
+  }
 }
 
 void projectile_spawn(s16 x, s16 y) {
@@ -75,25 +70,19 @@ void projectile_spawn(s16 x, s16 y) {
   }
 }
 
+// abstract pooling away from the enemy module
 void enemy_spawn(EnemyType enemy_type, s16 x, s16 y) {
   Enemy *enemy = (Enemy *) POOL_allocate(game.enemy_pool);
 
-  if (enemy) {
-    gameObject_init((GameObject *) enemy, x, y);
-    enemy->enemy_type = enemy_type;
-
-    if (enemy_type == POPCORN_1) {
-      enemy->hit_points = POPCORN_1_HP;
-    }
-  }
+  if (enemy) { enemy_init(enemy, x, y, enemy_type); }
 }
 
 void player_try_shoot(Player *player) {
-  if (player->coolDownTimer > 0) {
+  if (player->cool_down_timer > 0) {
     return;
   }
 
-  player->coolDownTimer = PROJECTILE_COOLDOWN_TIMER;
+  player->cool_down_timer = PROJECTILE_COOLDOWN_TIMER;
   projectile_spawn(
     F16_toInt(player->x) + (player->w / 2) - (PROJECTILE_WIDTH / 2),
     F16_toInt(player->y) - PROJECTILE_HEIGHT
@@ -102,7 +91,7 @@ void player_try_shoot(Player *player) {
 
 void player_handle_input(Player *player) {
   // handle cooldown
-  u16 input = JOY_readJoypad(player->joyPad);
+  u16 input = JOY_readJoypad(player->joy_pad);
 
   // left/right movement
   if (input & BUTTON_LEFT) {
@@ -125,21 +114,21 @@ void player_handle_input(Player *player) {
 }
 
 void weapon_cooldown_update(Player *player) {
-  if (player->coolDownTimer > 0) {
-    player->coolDownTimer--;
+  if (player->cool_down_timer > 0) {
+    player->cool_down_timer--;
   }
 }
 
 void player_update_position() {
-  game.player.x = clamp(game.player.x, FIX16(0), FIX16(VDP_getScreenWidth() - game.player.w));
-  game.player.y = clamp(game.player.y, FIX16(0), FIX16(VDP_getScreenHeight() - game.player.h));
+  game.player->x = clamp(game.player->x, FIX16(0), FIX16(VDP_getScreenWidth() - game.player->w));
+  game.player->y = clamp(game.player->y, FIX16(0), FIX16(VDP_getScreenHeight() - game.player->h));
 
-  SPR_setPosition(game.player.sprite, F16_toInt(game.player.x), F16_toInt(game.player.y));
+  SPR_setPosition(game.player->sprite, F16_toInt(game.player->x), F16_toInt(game.player->y));
 }
 
 void player_update() {
-  weapon_cooldown_update(&game.player);
-  player_handle_input(&game.player);
+  weapon_cooldown_update(game.player);
+  player_handle_input(game.player);
   player_update_position();
 }
 
@@ -155,18 +144,10 @@ void enemies_update() {
       continue;
     }
 
-    switch (enemy->enemy_type) {
-      case POPCORN_1:
-      default:
-        // move downwards
-        enemy->y += FIX16(1);
-        break;
-    }
-
-    SPR_setPosition(enemy->sprite, F16_toInt(enemy->x), F16_toInt(enemy->y));
+    enemy_update(enemy);
 
     // Remove enemy if it goes off-screen
-    if (enemy->y > FIX16(VDP_getScreenHeight())) {
+    if (enemy->to_be_removed) {
       release_pooled_object(game.enemy_pool, (void *) enemy);
     }
   }
@@ -207,6 +188,14 @@ void projectile_collision_update() {
 }
 
 void game_pools_create() {
+  // player -- it's probably odd to have the player in a pool of size 1 but pooling is doing some
+  //  memory stuff and the player was not appearing, player is most important, so make sure there is
+  //  memory for the player
+  game.player_pool = POOL_create(1, sizeof(Player));
+  FOREACH_IN_POOL(Projectile, player, game.player_pool) {
+    gameObject_create((GameObject *) player, &player_sprite, PAL1, 0, 0, PLAYER_HEIGHT, PLAYER_WIDTH);
+  }
+
   // projectiles
   game.projectile_pool = POOL_create(PROJECTILE_POOL_SIZE, sizeof(Projectile));
   FOREACH_IN_POOL(Projectile, projectile, game.projectile_pool) {
@@ -215,10 +204,17 @@ void game_pools_create() {
   }
 
   // enemies
-  game.enemy_pool = POOL_create(10, sizeof(Enemy));
+  game.enemy_pool = POOL_create(POPCORN_POOL_SIZE, sizeof(Enemy));
   FOREACH_IN_POOL(Projectile, enemy, game.enemy_pool) {
     gameObject_create((GameObject *) enemy, &popcorn_sprite, PAL2, 0, 0, POPCORN_WIDTH, POPCORN_HEIGHT);
     SPR_setVisibility(enemy->sprite, HIDDEN);
+  }
+
+  // enemy projectiles
+  game.enemy_projectile_pool = POOL_create(ENEMY_PROJECTILE_POOL_SIZE, sizeof(Projectile));
+  FOREACH_IN_POOL(Projectile, projectile, game.enemy_projectile_pool) {
+    gameObject_create((GameObject *) projectile, &enemy_projectile_sprite, PAL1, 0, 0, ENEMY_PROJECTILE_WIDTH, ENEMY_PROJECTILE_HEIGHT);
+    SPR_setVisibility(projectile->sprite, HIDDEN);
   }
 }
 
@@ -258,6 +254,17 @@ void bg_update(GameState *game) {
   VDP_setHorizontalScroll(BG_A, game->bg_x);
 }
 
+void enemy_spawn_test() {
+  // make a grid of enemies like space invaders
+  for (u16 row = 0; row < 8; row++) {
+    for (u16 col = 0; col < 8; col++) {
+      s16 x = col * (POPCORN_WIDTH + 8) + 40;
+      s16 y = row * (POPCORN_HEIGHT + 8) + 20;
+      enemy_spawn(BOUNCE_POPCORN_1, x, y);
+    }
+  }
+}
+
 void game_run() {
   JOY_init();
   SPR_init();
@@ -267,12 +274,8 @@ void game_run() {
 
   bg_init();
   game_pools_create();
-  player_create();
-
-  enemy_spawn(POPCORN_1, 100, 50);
-  enemy_spawn(POPCORN_1, 200, 80);
-  enemy_spawn(POPCORN_1, 150, 120);
-  enemy_spawn(POPCORN_1, 120, 160);
+  player_spawn();
+  enemy_spawn_test();
 
   while (true) {
     projectiles_update();

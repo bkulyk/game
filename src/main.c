@@ -9,6 +9,7 @@ void app_init() {
   appState = SPLASH;
   VDP_setScreenWidth320();
   PAL_setColors(0, (u16 *)palette_black, 64, DMA);
+  setRandomSeed(GET_HVCOUNTER);
 }
 
 int main(bool hardReset) {

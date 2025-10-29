@@ -9,11 +9,13 @@
     "vector": "c",
     "locale": "c",
     "splash.h": "c",
-    "game.h": "c"
+    "game.h": "c",
+    "game_object.h": "c"
   },
   "cSpell.words": [
     "blastem",
     "cowsay",
+    "HVCOUNTER",
     "Joypad",
     "respawn",
     "sgdk"
