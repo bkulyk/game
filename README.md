@@ -28,7 +28,7 @@ CFLAGS := $(CFLAGS) -I/opt/homebrew/opt/libpng/include
 LDFLAGS := $(LDFLAGS) -L/opt/homebrew/opt/libpng/lib
 ```
 
-The version of SGDK was dates and the example were not working without remapping some functions, so I changed the SGDK_VER.
+The version of SGDK was dated and the example were not working without remapping some functions, so I changed the SGDK_VER.
 
 ```makefile
 # SGDK_VER ?= __UNSET__

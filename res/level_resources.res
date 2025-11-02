@@ -1,0 +1,2 @@
+#        name             tmx_file                 layer_id      field_defs                                   sortby         decl_type          type_filter
+OBJECTS  enemies_level_1  "maps/level_1.tmx"       "EnemyLayer"  "name:string;enemy_type:u16;x:f32;y:f32;width:f32;height:f32;"     "sortby:y"     "EnemySpawnPoint"  "TiledEnemy"

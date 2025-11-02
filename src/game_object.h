@@ -4,9 +4,9 @@
 #include <genesis.h>
 
 typedef struct {
+  f32 x, y;         // Position (fixed point)
+  f32 width, height;           // Hit box width and height
   Sprite *sprite;     // Sprite reference
-  fix16 x, y;         // Position (fixed point)
-  u16 w, h;           // Hit box width and height
 } GameObject;
 
 void gameObject_init(GameObject *object, s16 x, s16 y);

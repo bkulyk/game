@@ -2,6 +2,7 @@
 #define ENEMY_H
 
 #include "game_object.h"
+#include "game.h"
 
 #define POPCORN_HEIGHT     24
 #define POPCORN_WIDTH      24
@@ -26,6 +27,6 @@ typedef struct {
 } Enemy;
 
 void enemy_init(Enemy *enemy, s16 x, s16 y, EnemyType enemy_type);
-void enemy_update(Enemy *enemy);
+void enemy_update(Enemy *enemy, GameState *game);
 
 #endif // ENEMY_H

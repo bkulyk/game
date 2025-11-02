@@ -1,6 +1,7 @@
 #include <genesis.h>
 #include "splash.h"
 #include "game.h"
+#include "maps.h"
 
 typedef enum { SPLASH, TITLE, GAME, GAME_OVER } AppState;
 AppState appState;

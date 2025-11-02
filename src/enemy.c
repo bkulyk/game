@@ -1,5 +1,6 @@
 #include <genesis.h>
 #include "enemy.h"
+#include "game.h"
 #include "game_object.h"
 
 void pick_new_direction(Enemy* enemy) {
@@ -19,13 +20,15 @@ void enemy_init(Enemy *enemy, s16 x, s16 y, EnemyType enemy_type) {
       enemy->cool_down_timer = POPCORN_SHOT_COOLDOWN;
       break;
     case POPCORN_1:
-      enemy->angle = 90;
+      enemy->angle = 45;
       enemy->hit_points = POPCORN_1_HP;
       enemy->cool_down_timer = POPCORN_SHOT_COOLDOWN;
       break;
     default:
       break;
   }
+
+  kprintf("Spawned enemy type %d at (%d, %d) with angle=%d", enemy_type, x, y, enemy->angle);
 }
 
 void cool_down_timer_update(Enemy *enemy) {
@@ -33,7 +36,7 @@ void cool_down_timer_update(Enemy *enemy) {
   enemy->cool_down_timer--;
 }
 
-void enemy_update(Enemy *enemy) {
+void enemy_update(Enemy *enemy, GameState *game) {
   cool_down_timer_update(enemy);
 
   f16 dx = 0;

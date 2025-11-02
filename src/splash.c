@@ -1,6 +1,8 @@
 #include <genesis.h>
 #include "resources.h"
 
+#define SPLASH_FRAMES 1
+
 // show the given image at the given position
 void showAnImage(Image theImg, u16 x, u16 y) {
   VDP_loadTileSet(theImg.tileset, TILE_USER_INDEX, DMA);
@@ -14,10 +16,10 @@ void splash() {
   // show the SGDK logo, you know, like a SEGA splash screen
   showAnImage(logo_sgdk, 30, 12);
   // so some text
-  VDP_drawText("Build with SGDK", 12, 20);
+  VDP_drawText("Built with SGDK", 12, 20);
 
   // hold for a few seconds
-  while (frames < 180) {
+  while (frames < SPLASH_FRAMES) {
     SYS_doVBlankProcess();
     frames++;
   }

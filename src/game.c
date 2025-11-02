@@ -2,8 +2,9 @@
 #include "game_object.h"
 #include "resources.h"
 #include "enemy.h"
-
-typedef enum { PL_STATE_DIED, PL_STATE_NORMAL } PlayerState;
+#include "maps.h"
+#include "game.h"
+#include "level_resources.h"
 
 #define PLAYER_HEIGHT                   32              // Player object height
 #define PLAYER_WIDTH                    32              // Player object width
@@ -28,28 +29,8 @@ typedef enum { PL_STATE_DIED, PL_STATE_NORMAL } PlayerState;
     ptr < (ObjectType **)pool->allocStack + pool->size;                     /* Continue while pointer is within pool bounds (start + size) */ \
     object = *++ptr)
 
-typedef struct {
-  GameObject;           // Inherits base GameObject properties
-  PlayerState state;    // Current player state
-  u16 cool_down_timer;  // Shooting cooldown counter
-  u16 respawn_timer;    // Timer for re-spawning after death
-  u16 joy_pad;
-} Player;
-
-typedef struct { GameObject; u8 damage_points; } Projectile;
-
-typedef struct {
-  Player *player;
-  Pool *player_pool;
-  Pool *projectile_pool;
-  Pool *enemy_pool;
-  Pool *explosion_pool;
-  Pool *enemy_projectile_pool;
-  u16 bg_x;
-  u16 bg_y;
-} GameState;
-
 GameState game;
+Camera camera;
 
 void player_spawn() {
   game.player = (Player *) POOL_allocate(game.player_pool);
@@ -84,7 +65,7 @@ void player_try_shoot(Player *player) {
 
   player->cool_down_timer = PROJECTILE_COOLDOWN_TIMER;
   projectile_spawn(
-    F16_toInt(player->x) + (player->w / 2) - (PROJECTILE_WIDTH / 2),
+    F16_toInt(player->x) + (player->width / 2) - (PROJECTILE_WIDTH / 2),
     F16_toInt(player->y) - PROJECTILE_HEIGHT
   );
 }
@@ -120,8 +101,8 @@ void weapon_cooldown_update(Player *player) {
 }
 
 void player_update_position() {
-  game.player->x = clamp(game.player->x, FIX16(0), FIX16(VDP_getScreenWidth() - game.player->w));
-  game.player->y = clamp(game.player->y, FIX16(0), FIX16(VDP_getScreenHeight() - game.player->h));
+  game.player->x = clamp(game.player->x, FIX16(0), FIX16(VDP_getScreenWidth() - game.player->width));
+  game.player->y = clamp(game.player->y, FIX16(0), FIX16(VDP_getScreenHeight() - game.player->height));
 
   SPR_setPosition(game.player->sprite, F16_toInt(game.player->x), F16_toInt(game.player->y));
 }
@@ -144,7 +125,7 @@ void enemies_update() {
       continue;
     }
 
-    enemy_update(enemy);
+    enemy_update(enemy, &game);
 
     // Remove enemy if it goes off-screen
     if (enemy->to_be_removed) {
@@ -235,8 +216,21 @@ void projectiles_update() {
   }
 }
 
+// Convert Tiled object coordinates to screen coordinates relative to camera
+void tiled_coords_to_camera(f32 tiled_x, f32 tiled_y, s16 *screen_x, s16 *screen_y) {
+  // Convert Tiled coordinates to world coordinates
+  s16 world_x = F32_toInt(tiled_x);
+  s16 world_y = F32_toInt(tiled_y);
+
+  // Convert world coordinates to screen coordinates
+  *screen_x = world_x - F32_toInt(camera.x);
+  *screen_y = world_y - F32_toInt(camera.y);
+}
+
 void game_draw_hud(GameState *game) {
-  VDP_drawTextBG(BG_B, "press a to shoot", 15, 0);
+  char camera_text[30];
+  sprintf(camera_text, "Cam: %d,%d", F32_toInt(camera.x), F32_toInt(camera.y));
+  VDP_drawTextBG(BG_B, camera_text, 1, 0);
 }
 
 void bg_init() {
@@ -254,15 +248,39 @@ void bg_update(GameState *game) {
   VDP_setHorizontalScroll(BG_A, game->bg_x);
 }
 
+void camera_init() {
+  camera.x = game.level.width / 2 - FIX32(VDP_getScreenWidth()) / 2;
+  camera.y = game.level.height - FIX32(VDP_getScreenHeight());
+  camera.width = VDP_getScreenWidth();
+  camera.height = VDP_getScreenHeight();
+  game.camera = &camera;
+}
+
+// void enemy_spawn_test() {
+//   // make a grid of enemies like space invaders
+//   for (u16 row = 0; row < 8; row++) {
+//     for (u16 col = 0; col < 8; col++) {
+//       s16 x = col * (POPCORN_WIDTH + 8) + 40;
+//       s16 y = row * (POPCORN_HEIGHT + 8) + 20;
+//       enemy_spawn(BOUNCE_POPCORN_1, x, y);
+//     }
+//   }
+// }
+
 void enemy_spawn_test() {
-  // make a grid of enemies like space invaders
-  for (u16 row = 0; row < 8; row++) {
-    for (u16 col = 0; col < 8; col++) {
-      s16 x = col * (POPCORN_WIDTH + 8) + 40;
-      s16 y = row * (POPCORN_HEIGHT + 8) + 20;
-      enemy_spawn(BOUNCE_POPCORN_1, x, y);
-    }
+  kprintf("Number of enemies in level 1: %d\n", LEVEL_1_ENEMY_COUNT);
+
+  for (u16 i = 0; i < LEVEL_1_ENEMY_COUNT; i++) {
+    EnemySpawnPoint *esp = enemies_level_1[i];
+    s16 screen_x, screen_y;
+    tiled_coords_to_camera(esp->x, esp->y, &screen_x, &screen_y);
+    kprintf("Spawning enemy type %d at screen position (%d, %d)", esp->enemy_type, screen_x, screen_y);
+    enemy_spawn(esp->enemy_type, screen_x, screen_y);
   }
+}
+
+void map_init() {
+  game.level = get_level(1);
 }
 
 void game_run() {
@@ -272,6 +290,8 @@ void game_run() {
   PAL_setPalette(PAL1, player_sprite.palette->data, DMA);
   PAL_setPalette(PAL2, popcorn_sprite.palette->data, DMA);
 
+  map_init();
+  camera_init();
   bg_init();
   game_pools_create();
   player_spawn();

@@ -10,7 +10,12 @@
     "locale": "c",
     "splash.h": "c",
     "game.h": "c",
-    "game_object.h": "c"
+    "game_object.h": "c",
+    "typeindex": "c",
+    "typeinfo": "c",
+    "enemy.h": "c",
+    "maps.h": "c",
+    "map.h": "c"
   },
   "cSpell.words": [
     "blastem",
@@ -18,7 +23,8 @@
     "HVCOUNTER",
     "Joypad",
     "respawn",
-    "sgdk"
+    "sgdk",
+    "sortby"
   ],
   "workbench.colorCustomizations": {
     "activityBar.activeBackground": "#7e33f7",
