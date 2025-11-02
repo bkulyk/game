@@ -39,6 +39,7 @@ typedef struct {
   u16 bg_y;
   Level level;
   Camera *camera;
+  Map *bgMap;
 } GameState;
 
 void game_run();

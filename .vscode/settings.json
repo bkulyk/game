@@ -15,7 +15,8 @@
     "typeinfo": "c",
     "enemy.h": "c",
     "maps.h": "c",
-    "map.h": "c"
+    "map.h": "c",
+    "level_resources.h": "c"
   },
   "cSpell.words": [
     "blastem",

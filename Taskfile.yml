@@ -22,7 +22,7 @@ tasks:
       - python3 res/color-snapper.py res/src/popcorn-enemy.png res/popcorn-enemy.png
       - python3 res/color-snapper.py res/src/projectile.png res/projectile.png
       - python3 res/color-snapper.py res/src/enemy_projectile.png res/enemy_projectile.png
-      - python3 res/color-snapper.py res/src/bg.png res/bg.png
+      - python3 res/color-snapper.py res/src/bg.png res/maps/stars.png
     silent: true
 
   build:

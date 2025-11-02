@@ -230,22 +230,7 @@ void tiled_coords_to_camera(f32 tiled_x, f32 tiled_y, s16 *screen_x, s16 *screen
 void game_draw_hud(GameState *game) {
   char camera_text[30];
   sprintf(camera_text, "Cam: %d,%d", F32_toInt(camera.x), F32_toInt(camera.y));
-  VDP_drawTextBG(BG_B, camera_text, 1, 0);
-}
-
-void bg_init() {
-  PAL_setPalette(PAL3, bg_img.palette->data, DMA);
-  VDP_drawImageEx(BG_A, &bg_img, TILE_ATTR_FULL(PAL3, false, false, false, TILE_USER_INDEX), 0, 0, false, DMA);
-  VDP_setScrollingMode(HSCROLL_PLANE, VSCROLL_PLANE);
-  VDP_setVerticalScroll(BG_A, 0);
-  VDP_setHorizontalScroll(BG_A, 0);
-}
-
-void bg_update(GameState *game) {
-  game->bg_y += BG_V_SPEED;
-  game->bg_x += BG_H_SPEED;
-  VDP_setVerticalScroll(BG_A, game->bg_y);
-  VDP_setHorizontalScroll(BG_A, game->bg_x);
+  VDP_drawTextBG(WINDOW, camera_text, 1, 0);
 }
 
 void camera_init() {
@@ -269,7 +254,6 @@ void camera_init() {
 
 void enemy_spawn_test() {
   kprintf("Number of enemies in level 1: %d\n", LEVEL_1_ENEMY_COUNT);
-
   for (u16 i = 0; i < LEVEL_1_ENEMY_COUNT; i++) {
     EnemySpawnPoint *esp = enemies_level_1[i];
     s16 screen_x, screen_y;
@@ -281,29 +265,42 @@ void enemy_spawn_test() {
 
 void map_init() {
   game.level = get_level(1);
+
+  PAL_setPalette(PAL1, player_sprite.palette->data, DMA);
+  PAL_setPalette(PAL2, popcorn_sprite.palette->data, DMA);
+
+  VDP_setBackgroundColor(1);
+  PAL_setPalette(PAL0, palette_bg_b_level_1.data, DMA);
+  VDP_loadTileSet(&map_bg_b_level_1_tileset0, TILE_USER_INDEX, DMA);
+  game.bgMap = MAP_create(&map_bg_b_level_1, BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, TILE_USER_INDEX));
+  PAL_setPalette(PAL0, palette_bg_b_level_1.data, DMA);
+
+  MAP_scrollTo(game.bgMap, camera.x, camera.y);
+}
+
+void map_update() {
+  camera.x += BG_H_SPEED;
+  camera.y += BG_V_SPEED;
+  MAP_scrollTo(game.bgMap, camera.x, camera.y);
 }
 
 void game_run() {
   JOY_init();
   SPR_init();
 
-  PAL_setPalette(PAL1, player_sprite.palette->data, DMA);
-  PAL_setPalette(PAL2, popcorn_sprite.palette->data, DMA);
-
   map_init();
   camera_init();
-  bg_init();
   game_pools_create();
   player_spawn();
   enemy_spawn_test();
 
   while (true) {
+    map_update();
     projectiles_update();
     player_update();
     enemies_update();
     projectile_collision_update();
     game_draw_hud(&game);
-    bg_update(&game);
     SPR_update();
     SYS_doVBlankProcess();
   }
